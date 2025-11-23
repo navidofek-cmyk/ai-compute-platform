@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  compute:
+    build:
+      context: ./services/compute
+      dockerfile: Dockerfile
+    container_name: compute-service
+    ports:
+      - "50051:50051"
+    environment:
+      - LOG_LEVEL=info
+      - GRPC_PORT=50051
+      - THREAD_POOL_SIZE=8
+    healthcheck:
+      test: ["CMD", "grpc_health_probe", "-addr=:50051"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - microservice-net
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+
+  gateway:
+    build:
+      context: ./services/gateway
+      dockerfile: Dockerfile
+    container_name: gateway-service
+    ports:
+      - "8000:8000"
+    environment:
+      - COMPUTE_SERVICE_URL=compute:50051
+      - LOG_LEVEL=info
+      - RATE_LIMIT_PER_MINUTE=100
+      - WORKERS=4
+    depends_on:
+      - compute
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - microservice-net
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 512M
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - microservice-net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana-dashboards:/etc/grafana/provisioning/dashboards
+    depends_on:
+      - prometheus
+    networks:
+      - microservice-net
+
+networks:
+  microservice-net:
+    driver: bridge
+
+volumes:
+  prometheus-data:
+  grafana-data:

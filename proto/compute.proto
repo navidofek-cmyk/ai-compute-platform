@@ -1,0 +1,101 @@
+syntax = "proto3";
+
+package compute;
+
+// Request for matrix multiplication
+message MatrixMultiplyRequest {
+  repeated double matrix_a = 1;
+  repeated double matrix_b = 2;
+  int32 rows_a = 3;
+  int32 cols_a = 4;
+  int32 cols_b = 5;
+}
+
+// Response for matrix multiplication
+message MatrixMultiplyResponse {
+  repeated double result = 1;
+  int32 rows = 2;
+  int32 cols = 3;
+  double computation_time_ms = 4;
+}
+
+// Request for statistical analysis
+message StatsAnalysisRequest {
+  repeated double data = 1;
+  repeated string operations = 2; // mean, median, stddev, variance, percentiles
+}
+
+// Response for statistical analysis
+message StatsAnalysisResponse {
+  double mean = 1;
+  double median = 2;
+  double stddev = 3;
+  double variance = 4;
+  map<int32, double> percentiles = 5; // key: percentile (e.g., 25, 50, 75, 95, 99)
+  double min = 6;
+  double max = 7;
+  int32 count = 8;
+  double computation_time_ms = 9;
+}
+
+// Request for Monte Carlo simulation
+message MonteCarloRequest {
+  int64 iterations = 1;
+  int32 dimensions = 2;
+  int32 seed = 3;
+  string simulation_type = 4; // pi_estimation, option_pricing, integration
+}
+
+// Response for Monte Carlo simulation
+message MonteCarloResponse {
+  double result = 1;
+  double confidence_interval_lower = 2;
+  double confidence_interval_upper = 3;
+  int64 iterations_completed = 4;
+  double computation_time_ms = 5;
+  map<string, double> additional_metrics = 6;
+}
+
+// Request for vector operations
+message VectorOperationRequest {
+  repeated double vector_a = 1;
+  repeated double vector_b = 2;
+  string operation = 3; // dot_product, cross_product, norm, distance
+}
+
+// Response for vector operations
+message VectorOperationResponse {
+  repeated double result_vector = 1;
+  double result_scalar = 2;
+  double computation_time_ms = 3;
+}
+
+// Health check request
+message HealthCheckRequest {}
+
+// Health check response
+message HealthCheckResponse {
+  string status = 1;
+  int32 active_threads = 2;
+  double uptime_seconds = 3;
+  int64 total_requests = 4;
+  double avg_response_time_ms = 5;
+}
+
+// The compute service definition
+service ComputeService {
+  // Matrix operations
+  rpc MultiplyMatrices(MatrixMultiplyRequest) returns (MatrixMultiplyResponse);
+  
+  // Statistical analysis
+  rpc AnalyzeStatistics(StatsAnalysisRequest) returns (StatsAnalysisResponse);
+  
+  // Monte Carlo simulations
+  rpc RunMonteCarlo(MonteCarloRequest) returns (MonteCarloResponse);
+  
+  // Vector operations
+  rpc VectorOperation(VectorOperationRequest) returns (VectorOperationResponse);
+  
+  // Health check
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}

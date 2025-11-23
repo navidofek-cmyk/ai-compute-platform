@@ -1,0 +1,71 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+env/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+dist/
+build/
+
+# C++
+*.o
+*.so
+*.a
+*.exe
+*.out
+build/
+cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+*.swp
+*.swo
+*~
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# Docker
+.dockerignore
+
+# Environment - CRITICAL: Never commit API keys!
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Generated protobuf files
+*_pb2.py
+*_pb2_grpc.py
+*_pb2.pyi
+*.pb.h
+*.pb.cc
+
+# Session logs (obsahují citlivé informace)
+session_log_*.md
+
+# Testing
+coverage/
+.nyc_output/
+
+# OS
+Thumbs.db
