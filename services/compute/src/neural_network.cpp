@@ -4,6 +4,7 @@
 #include <numeric>
 #include <cmath>
 #include <stdexcept>
+#include <thread>
 
 namespace compute {
 
@@ -13,15 +14,15 @@ NeuralNetworkEngine::NeuralNetworkEngine(const std::string& model_path, bool use
         initialize_session(model_path, use_gpu);
         extract_model_info();
         is_initialized_ = true;
-        Logger::info("Neural network engine initialized with model: " + model_path);
+        LOG_INFO("Neural network engine initialized with model: " + model_path);
     } catch (const std::exception& e) {
-        Logger::error("Failed to initialize neural network: " + std::string(e.what()));
+        LOG_ERROR("Failed to initialize neural network: " + std::string(e.what()));
         throw;
     }
 }
 
 NeuralNetworkEngine::~NeuralNetworkEngine() {
-    Logger::info("Neural network engine destroyed");
+    LOG_INFO("Neural network engine destroyed");
 }
 
 void NeuralNetworkEngine::initialize_session(const std::string& model_path, bool use_gpu) {
@@ -39,9 +40,9 @@ void NeuralNetworkEngine::initialize_session(const std::string& model_path, bool
             // Try to use CUDA provider
             OrtCUDAProviderOptions cuda_options{};
             session_options_->AppendExecutionProvider_CUDA(cuda_options);
-            Logger::info("CUDA provider enabled for GPU acceleration");
+            LOG_INFO("CUDA provider enabled for GPU acceleration");
         } catch (const std::exception& e) {
-            Logger::warn("CUDA not available, falling back to CPU: " + std::string(e.what()));
+            LOG_WARNING("CUDA not available, falling back to CPU: " + std::string(e.what()));
         }
     }
     
