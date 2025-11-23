@@ -69,3 +69,5 @@ coverage/
 
 # OS
 Thumbs.db
+ml_models/data/
+ml_models/*.pth
