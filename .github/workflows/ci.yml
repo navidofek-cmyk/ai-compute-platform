@@ -1,0 +1,72 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test-cpp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ libgrpc++-dev libprotobuf-dev protobuf-compiler-grpc
+      
+      - name: Build C++ service
+        run: |
+          cd services/compute
+          mkdir build && cd build
+          cmake ..
+          make -j$(nproc)
+      
+      - name: Run C++ tests
+        run: |
+          cd services/compute/build
+          ctest --verbose
+
+  test-python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          cd services/gateway
+          pip install -r requirements.txt
+      
+      - name: Run Python tests
+        run: |
+          cd services/gateway
+          pytest tests/ -v --cov
+      
+      - name: Lint with flake8
+        run: |
+          cd services/gateway
+          flake8 app/ --max-line-length=100
+
+  build-docker:
+    runs-on: ubuntu-latest
+    needs: [test-cpp, test-python]
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Build Docker images
+        run: |
+          docker-compose build
+      
+      - name: Test Docker containers
+        run: |
+          docker-compose up -d
+          sleep 10
+          curl -f http://localhost:8000/health || exit 1
+          docker-compose down
