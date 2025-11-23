@@ -9,7 +9,7 @@ import structlog
 import time
 
 from app.config import get_settings
-from app.routers import compute, health, ai
+from app.routers import compute, health, ai, ml
 from app.services.compute_client import get_compute_client, close_compute_client
 
 # Configure structured logging
@@ -198,6 +198,7 @@ async def metrics():
 app.include_router(health.router)
 app.include_router(compute.router, prefix=settings.api_prefix)
 app.include_router(ai.router)  # AI Assistant endpoints
+app.include_router(ml.router)  # ML Inference endpoints
 
 
 if __name__ == "__main__":

@@ -70,6 +70,37 @@ message VectorOperationResponse {
   double computation_time_ms = 3;
 }
 
+// Request for neural network inference
+message MLInferenceRequest {
+  string model_name = 1;
+  repeated float input_data = 2;
+  repeated int64 input_shape = 3;
+  bool apply_softmax = 4;
+  int32 top_k = 5; // Get top-k predictions (0 = return all)
+}
+
+// Response for neural network inference
+message MLInferenceResponse {
+  repeated float output = 1;
+  repeated float probabilities = 2; // If softmax applied
+  repeated int32 top_classes = 3; // Top-k predicted classes
+  repeated float top_probabilities = 4; // Probabilities of top-k classes
+  double inference_time_ms = 5;
+  string model_info = 6;
+}
+
+// Request for batch ML inference
+message MLBatchInferenceRequest {
+  string model_name = 1;
+  repeated MLInferenceRequest batch_requests = 2;
+}
+
+// Response for batch ML inference
+message MLBatchInferenceResponse {
+  repeated MLInferenceResponse batch_responses = 1;
+  double total_inference_time_ms = 2;
+}
+
 // Health check request
 message HealthCheckRequest {}
 
@@ -95,6 +126,10 @@ service ComputeService {
   
   // Vector operations
   rpc VectorOperation(VectorOperationRequest) returns (VectorOperationResponse);
+  
+  // Machine Learning inference
+  rpc MLInference(MLInferenceRequest) returns (MLInferenceResponse);
+  rpc MLBatchInference(MLBatchInferenceRequest) returns (MLBatchInferenceResponse);
   
   // Health check
   rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);

@@ -17,12 +17,39 @@ find_package(Protobuf REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GRPC REQUIRED grpc++)
 
+# ONNX Runtime
+set(ONNXRUNTIME_ROOT_PATH "/usr/local" CACHE PATH "ONNX Runtime root directory")
+find_path(ONNXRUNTIME_INCLUDE_DIR onnxruntime_cxx_api.h
+    PATHS ${ONNXRUNTIME_ROOT_PATH}/include/onnxruntime
+          /usr/include/onnxruntime
+          /usr/local/include/onnxruntime
+)
+find_library(ONNXRUNTIME_LIBRARY onnxruntime
+    PATHS ${ONNXRUNTIME_ROOT_PATH}/lib
+          /usr/lib
+          /usr/local/lib
+          /usr/lib/x86_64-linux-gnu
+)
+
+if(ONNXRUNTIME_INCLUDE_DIR AND ONNXRUNTIME_LIBRARY)
+    message(STATUS "ONNX Runtime found: ${ONNXRUNTIME_LIBRARY}")
+    set(ONNXRUNTIME_FOUND TRUE)
+else()
+    message(WARNING "ONNX Runtime not found - ML inference will be disabled")
+    set(ONNXRUNTIME_FOUND FALSE)
+endif()
+
 # Include directories
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${CMAKE_CURRENT_BINARY_DIR}
     ${Protobuf_INCLUDE_DIRS}
 )
+
+if(ONNXRUNTIME_FOUND)
+    include_directories(${ONNXRUNTIME_INCLUDE_DIR})
+    add_definitions(-DUSE_ONNXRUNTIME)
+endif()
 
 # Generate protobuf and gRPC files
 set(PROTO_PATH "${CMAKE_CURRENT_SOURCE_DIR}/../../proto")
@@ -60,6 +87,10 @@ set(SOURCES
     ${GENERATED_PROTOBUF_PATH}/compute.grpc.pb.cc
 )
 
+if(ONNXRUNTIME_FOUND)
+    list(APPEND SOURCES src/neural_network.cpp)
+endif()
+
 # Header files
 set(HEADERS
     include/server.hpp
@@ -71,6 +102,10 @@ set(HEADERS
     include/utils/thread_pool.hpp
 )
 
+if(ONNXRUNTIME_FOUND)
+    list(APPEND HEADERS include/neural_network.hpp)
+endif()
+
 # Create executable
 add_executable(compute_service ${SOURCES} ${HEADERS})
 
@@ -80,6 +115,10 @@ target_link_libraries(compute_service
     ${GRPC_LIBRARIES}
     Threads::Threads
 )
+
+if(ONNXRUNTIME_FOUND)
+    target_link_libraries(compute_service ${ONNXRUNTIME_LIBRARY})
+endif()
 
 # Install targets
 install(TARGETS compute_service DESTINATION bin)
