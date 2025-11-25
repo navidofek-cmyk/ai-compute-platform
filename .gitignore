@@ -62,6 +62,7 @@ logs/
 
 # Session logs (obsahují citlivé informace)
 session_log_*.md
+CHAT_HISTORY.md
 
 # Testing
 coverage/
