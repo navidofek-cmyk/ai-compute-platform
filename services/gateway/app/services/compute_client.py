@@ -166,6 +166,26 @@ class ComputeServiceClient:
             logger.error("grpc_error", error=str(e), code=e.code())
             raise
     
+    def MLInference(self, request):
+        """
+        Execute ML inference via gRPC
+        
+        Args:
+            request: compute_pb2.MLInferenceRequest
+            
+        Returns:
+            compute_pb2.MLInferenceResponse
+        """
+        try:
+            response = self.stub.MLInference(
+                request,
+                timeout=self.settings.grpc_timeout
+            )
+            return response
+        except grpc.RpcError as e:
+            logger.error("ml_inference_grpc_error", error=str(e), code=e.code())
+            raise
+    
     async def health_check(self) -> dict:
         """Check compute service health"""
         try:

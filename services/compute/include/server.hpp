@@ -37,6 +37,16 @@ public:
         const HealthCheckRequest* request,
         HealthCheckResponse* response) override;
 
+    grpc::Status MLInference(
+        grpc::ServerContext* context,
+        const MLInferenceRequest* request,
+        MLInferenceResponse* response) override;
+
+    grpc::Status MLBatchInference(
+        grpc::ServerContext* context,
+        const MLBatchInferenceRequest* request,
+        MLBatchInferenceResponse* response) override;
+
 private:
     std::shared_ptr<ComputeEngine> engine_;
     std::chrono::steady_clock::time_point start_time_;

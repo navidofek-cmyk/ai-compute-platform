@@ -2,6 +2,10 @@
 #include "utils/logger.hpp"
 #include <chrono>
 
+#ifdef USE_ONNXRUNTIME
+#include "neural_network.hpp"
+#endif
+
 namespace compute {
 
 ComputeServiceImpl::ComputeServiceImpl(std::shared_ptr<ComputeEngine> engine)
@@ -201,6 +205,99 @@ grpc::Status ComputeServiceImpl::HealthCheck(
     }
     
     return grpc::Status::OK;
+}
+
+grpc::Status ComputeServiceImpl::MLInference(
+    grpc::ServerContext* context,
+    const MLInferenceRequest* request,
+    MLInferenceResponse* response) {
+    
+    try {
+        auto start = std::chrono::high_resolution_clock::now();
+        total_requests_++;
+        
+        LOG_INFO("ML Inference request for model: " + request->model_name());
+        
+#ifdef USE_ONNXRUNTIME
+        // Initialize neural network engine
+        std::string model_path = "models/" + request->model_name() + "_model.onnx";
+        compute::NeuralNetworkEngine engine(model_path, false);
+        
+        // Convert input data
+        std::vector<float> input_data(request->input_data().begin(), request->input_data().end());
+        std::vector<int64_t> input_shape(request->input_shape().begin(), request->input_shape().end());
+        
+        // Run inference
+        auto output = engine.predict(input_data, input_shape);
+        
+        // Apply softmax if requested
+        std::vector<float> probabilities;
+        if (request->apply_softmax()) {
+            probabilities = compute::NeuralNetworkEngine::softmax(output);
+        } else {
+            probabilities = output;
+        }
+        
+        // Set output
+        for (const auto& val : output) {
+            response->add_output(val);
+        }
+        
+        for (const auto& prob : probabilities) {
+            response->add_probabilities(prob);
+        }
+        
+        // Get top-k if requested
+        if (request->top_k() > 0) {
+            auto top_k = compute::NeuralNetworkEngine::get_top_k(probabilities, request->top_k());
+            for (const auto& [cls, prob] : top_k) {
+                response->add_top_classes(cls);
+                response->add_top_probabilities(prob);
+            }
+        }
+        
+        // Add model info
+        auto input_shape_model = engine.get_input_shape();
+        auto output_shape_model = engine.get_output_shape();
+        std::string model_info = "Input: [";
+        for (size_t i = 0; i < input_shape_model.size(); i++) {
+            model_info += std::to_string(input_shape_model[i]);
+            if (i < input_shape_model.size() - 1) model_info += ",";
+        }
+        model_info += "] Output: [";
+        for (size_t i = 0; i < output_shape_model.size(); i++) {
+            model_info += std::to_string(output_shape_model[i]);
+            if (i < output_shape_model.size() - 1) model_info += ",";
+        }
+        model_info += "]";
+        response->set_model_info(model_info);
+        
+        auto end = std::chrono::high_resolution_clock::now();
+        double duration = std::chrono::duration<double, std::milli>(end - start).count();
+        response->set_inference_time_ms(duration);
+        
+        {
+            std::lock_guard<std::mutex> lock(const_cast<std::mutex&>(metrics_mutex_));
+            total_response_time_ += duration;
+        }
+        
+        return grpc::Status::OK;
+#else
+        return grpc::Status(grpc::StatusCode::UNIMPLEMENTED, "ML inference not available - ONNX Runtime not compiled");
+#endif
+        
+    } catch (const std::exception& e) {
+        LOG_ERROR("ML Inference error: " + std::string(e.what()));
+        return grpc::Status(grpc::StatusCode::INTERNAL, e.what());
+    }
+}
+
+grpc::Status ComputeServiceImpl::MLBatchInference(
+    grpc::ServerContext* context,
+    const MLBatchInferenceRequest* request,
+    MLBatchInferenceResponse* response) {
+    
+    return grpc::Status(grpc::StatusCode::UNIMPLEMENTED, "Batch inference not yet implemented");
 }
 
 Server::Server(const std::string& address, int thread_pool_size)
